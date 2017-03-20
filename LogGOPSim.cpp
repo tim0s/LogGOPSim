@@ -67,6 +67,11 @@ typedef unsigned long long int ullint;
 // matches and removes element from list if found, otherwise returns
 // false
 typedef std::list<ruqelem_t> ruq_t;
+
+static inline void print_queue_update(ruqelem_t elem, char* queuename, int host) {
+  printf("[matching] add (%i,%i) to queue %s on host %i\n", elem.src, elem.tag, queuename, host);
+}
+
 static inline bool match(const graph_node_properties &elem, ruq_t *q, ruqelem_t *retelem=NULL, int* cost=NULL, int* len=NULL) {
   
   //std::cout << "UQ size " << q->size() << "\n";
@@ -78,7 +83,9 @@ static inline bool match(const graph_node_properties &elem, ruq_t *q, ruqelem_t 
   for(ruq_t::iterator iter=q->begin(); iter!=q->end(); ++iter) {
     *cost += 1;
     if(elem.target == ANY_SOURCE || iter->src == ANY_SOURCE || iter->src == elem.target) {
-      if(elem.tag == ANY_TAG || iter->tag == ANY_TAG || iter->tag == elem.tag) {
+	  int etag = elem.tag & 0xFFFFFF;
+	  int itag = iter->tag & 0xFFFFFF;
+      if(elem.tag == ANY_TAG || iter->tag == ANY_TAG || iter->tag == elem.tag || etag == 0xFFFFFF || itag == 0xFFFFFF) {
         if(retelem) *retelem=*iter;
         q->erase(iter);
         return true;        
@@ -311,8 +318,8 @@ int main(int argc, char **argv) {
         ruqelem_t matched_elem; 
 	int match_cost, queue_len;
         if(match(elem, &uq[elem.host], &matched_elem, &match_cost, &queue_len))  { // found it in local UQ 
-          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (success) time %lu\n",
-                 elem.host, match_cost, queue_len, elem.time);
+          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (success) time %lu, searching for (%i,%i)\n",
+                 elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
           if(print) printf("-- found in local UQ\n");
           if(elem.size > S) { // rendezvous - free remote request
             // satisfy remote requires 
@@ -342,8 +349,8 @@ int main(int argc, char **argv) {
           check_hosts.push_back(elem.host);
           if(print) printf("-- satisfy local requires\n");
         } else { // not found in local UQ - add to RQ
-          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (failure) time %lu\n",
-	         elem.host, match_cost, queue_len, elem.time);
+          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (failure) time %lu, searching for (%i,%i)\n",
+	         elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
           if(print) printf("-- not found in local UQ -- add to RQ\n");
           ruqelem_t nelem; 
           nelem.size = elem.size;
@@ -352,6 +359,7 @@ int main(int argc, char **argv) {
           nelem.offset = elem.offset;
 #ifdef LIST_MATCH
           rq[elem.host].push_back(nelem);
+		  print_queue_update(nelem, (char*) "RQ", elem.host);
 #else
           rq[elem.host][std::make_pair(nelem.tag,nelem.src)].push(nelem);
 #endif
@@ -372,8 +380,8 @@ int main(int argc, char **argv) {
           ruqelem_t matched_elem;
 	  int match_cost, queue_len;
           if(match(elem, &rq[elem.host], &matched_elem, &match_cost, &queue_len)) { // found it in RQ
-            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (success) time %lu\n",
-	            elem.host, match_cost, queue_len, elem.time);
+            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (success) time %lu, searching for (%i,%i)\n",
+	            elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
             if(print) printf("-- found in RQ\n");
             if(elem.size > S) { // rendezvous - free remote request
               // satisfy remote requires
@@ -403,8 +411,8 @@ int main(int argc, char **argv) {
 
 
           } else { // not in RQ
-            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (failure) time %lu\n",
-		   elem.host, match_cost, queue_len, elem.time);
+            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (failure) time %lu, searching for (%i,%i)\n",
+		   elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
             if(print) printf("-- not found in RQ - add to UQ\n");
             ruqelem_t nelem;
             nelem.size = elem.size;
@@ -414,6 +422,7 @@ int main(int argc, char **argv) {
             nelem.starttime = elem.time; // when it was started
 #ifdef LIST_MATCH
             uq[elem.host].push_back(nelem);
+		  	print_queue_update(nelem, (char*)"UQ", elem.host);
 #else
             uq[elem.host][std::make_pair(nelem.tag,nelem.src)].push(nelem);
 #endif
