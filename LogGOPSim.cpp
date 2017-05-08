@@ -318,8 +318,8 @@ int main(int argc, char **argv) {
         ruqelem_t matched_elem; 
 	int match_cost, queue_len;
         if(match(elem, &uq[elem.host], &matched_elem, &match_cost, &queue_len))  { // found it in local UQ 
-          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (success) time %lu, searching for (%i,%i)\n",
-                 elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
+          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (success) time %lu, searching for (%i,%i) message size is %llu\n",
+                 elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag, elem.size);
           if(print) printf("-- found in local UQ\n");
           if(elem.size > S) { // rendezvous - free remote request
             // satisfy remote requires 
@@ -349,8 +349,8 @@ int main(int argc, char **argv) {
           check_hosts.push_back(elem.host);
           if(print) printf("-- satisfy local requires\n");
         } else { // not found in local UQ - add to RQ
-          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (failure) time %lu, searching for (%i,%i)\n",
-	         elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
+          printf("[matching] Host %i incurred %i matching cost on UQ, len of queue was %i (failure) time %lu, searching for (%i,%i) message size is %llu\n",
+	         elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag, elem.size);
           if(print) printf("-- not found in local UQ -- add to RQ\n");
           ruqelem_t nelem; 
           nelem.size = elem.size;
@@ -380,8 +380,8 @@ int main(int argc, char **argv) {
           ruqelem_t matched_elem;
 	  int match_cost, queue_len;
           if(match(elem, &rq[elem.host], &matched_elem, &match_cost, &queue_len)) { // found it in RQ
-            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (success) time %lu, searching for (%i,%i)\n",
-	            elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
+            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (success) time %lu, searching for (%i,%i) message size is %llu\n",
+	            elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag, elem.size);
             if(print) printf("-- found in RQ\n");
             if(elem.size > S) { // rendezvous - free remote request
               // satisfy remote requires
@@ -411,8 +411,8 @@ int main(int argc, char **argv) {
 
 
           } else { // not in RQ
-            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (failure) time %lu, searching for (%i,%i)\n",
-		   elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag);
+            printf("[matching] Host %i incurred %i matching cost on RQ, len of queue was %i (failure) time %lu, searching for (%i,%i) message size is %llu\n",
+		   elem.host, match_cost, queue_len, elem.time, elem.target, elem.tag, elem.size);
             if(print) printf("-- not found in RQ - add to UQ\n");
             ruqelem_t nelem;
             nelem.size = elem.size;
